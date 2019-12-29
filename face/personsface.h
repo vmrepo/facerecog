@@ -15,19 +15,19 @@ struct PersonFace {
 	string name;
 	void update(const vector<float>& facedescriptor_, int counter_, const string& name_ = "")
 	{
-		if( counter == 0 )
+		if (counter == 0)
 		{
 			facedescriptor = facedescriptor_;
 		}
 		else
 		{
-			for( int i = 0; i < 128; i++ )
+			for (int i = 0; i < 128; i++)
 			{
 				facedescriptor[i] = (counter * facedescriptor[i] + counter_ * facedescriptor_[i]) / (counter + counter_);
 			}
 		}
 
-		counter++;
+		counter += counter_;
 
 		if (!name_.empty())
 		{
@@ -43,7 +43,7 @@ struct PersonsFace
 
 	static void init(const string& filepath);
 	static void update();
-	static PersonFace* find(const vector<float>& facedescriptor);
+	static PersonFace& get(const vector<float>& facedescriptor);
 
 	PersonsFace();
 	PersonsFace(const PersonsFace& personsface);

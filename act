@@ -30,4 +30,4 @@ face_dev, face_sources:
 таким образом форимруетс€ соответсвие: таблица лиц <-> изображени€ с лицами с ограничивающими боксами
 
 дл€ фото и видео логи либо на экран либо в файл:
-<personid>;<faceid>;<x>;<y>;<w>;<h>;<facedescriptor>;name
+<personid>;<faceid>;<x>;<y>;<w>;<h>;<startfame>[<starttimecode>]<endfame>[<endtimecode>];<facedescriptor>;name

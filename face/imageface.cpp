@@ -266,47 +266,55 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 		{
 			int faceid = ++s_maxfaceid;
 			savemaxfaceid(s_maxfaceid);
-			int personid = 0;
-			string personname = s_personname;
 
 			std::vector<float> facedescriptor;
 			copy(facedescriptors[j], facedescriptor);
 
-			PersonFace* person = s_persons.find(facedescriptor);
-
-			if (!person && s_update)
-			{
-				PersonsFace::s_persons.push_back(PersonFace());
-				person = &PersonsFace::s_persons.back();
-				person->id = ++PersonsFace::s_maxpersonid;
-				person->counter = 0;
-			}
+			PersonFace &person = s_persons.get(facedescriptor);
+			person.update(facedescriptor, 1, s_personname);
 
 			if (s_update)
 			{
-				person->update(facedescriptor, 1, s_personname);
 				s_persons.update();
 			}
 
-			if (person)
-			{
-				personid = person->id;
-				personname = s_personname.empty() ? person->name : s_personname;
-			}
+			titles.push_back(tostring(person.id) + " " + person.name);
 
-			titles.push_back(tostring(personid) + " " + personname);
+			log("%d;%d;%d,%d;%d;%d;0[0];0[0]%s;%s\n",
+				person.id,
+				faceid,
+				face_rects[j].x,
+				face_rects[j].y,
+				face_rects[j].width,
+				face_rects[j].height,
+				tostring(facedescriptor).c_str(),
+				person.name.c_str());
 
-			log("%d;%d;%d,%d;%d;%d;%s;%s\n", personid, faceid, face_rects[j].x, face_rects[j].y, face_rects[j].width, face_rects[j].height, tostring( facedescriptor ).c_str(), personname.c_str());
 			char filename[128];
-			sprintf(filename, "%d-%d-%d-%d-%d-%d.jpg", personid, faceid, face_rects[j].x, face_rects[j].y, face_rects[j].width, face_rects[j].height);
-			imwrite(s_imagepath + "/" + filename, image);
+
+			sprintf(filename, "%d-%d-%d-%d-%d-%d.jpg",
+				person.id,
+				faceid,
+				face_rects[j].x,
+				face_rects[j].y,
+				face_rects[j].width,
+				face_rects[j].height);
+
+			{
+				Mat image_;
+				Scalar red = Scalar(0, 0, 255);
+				image.copyTo(image_);
+				cv::rectangle(image_, face_rects[j], red);
+				imwrite(s_imagepath + "/" + filename, image_);
+			}
+			//imwrite(s_imagepath + "/" + filename, image);
 		}
 
 		if (i < outnames.size())
 		{
 			for (int j = 0; j < face_rects.size(); j++)
 			{
-				Scalar red = Scalar( 0, 0, 255 );
+				Scalar red = Scalar(0, 0, 255);
 				cv::rectangle(image, face_rects[j], red);
 				putText(image, titles[j], face_rects[j].tl(), FONT_HERSHEY_DUPLEX, 0.8, red);
 			}

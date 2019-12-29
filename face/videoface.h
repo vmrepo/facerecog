@@ -47,7 +47,6 @@ struct StatusFace
 	std::vector<float> facedescriptor;
 	size_t counter;
 	std::vector<SimpleKalmanFilter> filters;
-	PersonFace* person;
 	void append(const std::vector<float>& facedescriptor_)
 	{
 		if ( counter == 0)
@@ -71,7 +70,6 @@ struct FrameFace
 	Rect rect;
 	dlib::matrix<dlib::rgb_pixel> face;
 	std::vector<float> facedescriptor;
-	PersonFace* person;
 };
 
 struct VideoFace

@@ -191,34 +191,43 @@ void PersonsFace::update()
 
 	for (vector<PersonFace>::iterator it = s_persons.begin(); it != s_persons.end(); it++)
 	{
-		fprintf(fd, "%d;%d;%s;%s", (*it).id, (*it).counter, tostring((*it).facedescriptor).c_str(), (*it).name.c_str());
+		fprintf(fd, "%d;%d;%s;%s\n", (*it).id, (*it).counter, tostring((*it).facedescriptor).c_str(), (*it).name.c_str());
 	}
 
 	fclose(fd);
 }
 
-PersonFace* PersonsFace::find(const vector<float>& facedescriptor)
+PersonFace& PersonsFace::get(const vector<float>& facedescriptor)
 {
-	PersonFace* person = nullptr;
+	size_t idx = -1;
 	double best_len = -1;
 
 	double threshold_len = 0.6;
 
-	for (vector<PersonFace>::iterator it = s_persons.begin(); it != s_persons.end(); it++)
+	for (int i = 0; i < s_persons.size(); i++)
 	{
-		double len = distance(facedescriptor, (*it).facedescriptor);
+		double len = distance(facedescriptor, s_persons[i].facedescriptor);
 
 		if (len < threshold_len)
 		{
 			if (best_len == -1 || len < best_len)
 			{
 				best_len = len;
-				person = &(*it);
+				idx = i;
 			}
 		}
 	}
 
-	return person;
+	if (idx == -1)
+	{
+		PersonFace personface;
+		personface.id = ++s_maxpersonid;
+		personface.counter = 0;
+		s_persons.push_back( personface );
+		idx = s_persons.size() - 1;
+	}
+
+	return s_persons[idx];
 }
 
 PersonsFace::PersonsFace()

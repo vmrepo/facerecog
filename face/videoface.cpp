@@ -272,7 +272,7 @@ bool VideoFace::init(const string &path)
 	deserialize(shapefile) >> SP;
 	deserialize(resnetfile) >> NET;
 
-	s_persons.init( s_personpath + "/" + "persons.csv" );
+	s_persons.init(s_personpath + "/" + "persons.csv");
 
 	return true;
 }
@@ -366,24 +366,38 @@ void VideoFace::process(const string &videosource)
 	{
 		if ((*it).second.lastframe - (*it).second.startframe + 1 >= s_neededframes)
 		{
-			char filename[128];
-			sprintf(filename, "%d.jpg", (*it).first);
-			log("face: %s; startframe: %zd[%s]; endframe: %zd[%s], %s\n", tostring((*it).second.facedescriptor).c_str(),
-				(*it).second.startframe, timecode((*it).second.startframe, fps).c_str(),
-				(*it).second.lastframe, timecode((*it).second.lastframe, fps).c_str(), filename);
-
-			if ((*it).second.person)
+			if (s_update)
 			{
-				(*it).second.person->update((*it).second.facedescriptor, (*it).second.counter);
 				s_persons.update();
 			}
+
+			log("%d;%d;%d,%d;%d;%d;%zd[%s];%zd[%s];%s;%s\n",
+				0,//personid
+				(*it).first,
+				(*it).second.startrect.x,
+				(*it).second.startrect.y, 
+				(*it).second.startrect.width,
+				(*it).second.startrect.height, 
+				(*it).second.startframe, timecode((*it).second.startframe, fps).c_str(),
+				(*it).second.lastframe, timecode((*it).second.lastframe, fps).c_str(),
+				tostring((*it).second.facedescriptor).c_str(),
+				"");//personname
+
+			char filename[128];
+
+			sprintf(filename, "%d-%d-%d-%d-%d-%d.jpg",
+				0,//personid
+				(*it).first,
+				(*it).second.startrect.x,
+				(*it).second.startrect.y,
+				(*it).second.startrect.width,
+				(*it).second.startrect.height);
 
 			{
 				Mat image_;
 				Scalar red = Scalar(0, 0, 255);
 				(*it).second.image.copyTo(image_);
 				cv::rectangle(image_, (*it).second.startrect, red);
-				putText(image_, tostring((*it).first), (*it).second.startrect.tl(), FONT_HERSHEY_DUPLEX, 0.8, red);
 				imwrite(s_imagepath + "/" + filename, image_);
 			}
 			//imwrite(s_imagepath + "/" + filename, (*it).second.image);
@@ -491,7 +505,6 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 				status[faceid].startframe = start + i * step;
 				status[faceid].startrect = face.rect;
 				status[faceid].counter = 0;
-				status[faceid].person = s_persons.find(face.facedescriptor);
 
 				if (s_kalman)
 				{
@@ -512,7 +525,6 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 					vectfaces[k][faceid] = FrameFace();
 					vectfaces[k][faceid].rect = status[faceid].lastrect;
 					vectfaces[k][faceid].facedescriptor = status[faceid].facedescriptor;
-					faces[faceid].person = status[faceid].person;
 				}
 			}
 
@@ -538,7 +550,6 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 				faces[faceid].rect = face.rect;
 				faces[faceid].face = face.face;
 				faces[faceid].facedescriptor = status[faceid].facedescriptor;
-				faces[faceid].person = status[faceid].person;
 			}
 		}
 
@@ -554,24 +565,38 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 			{
 				if ((*it).second.lastframe - (*it).second.startframe + 1 >= s_neededframes)
 				{
-					char filename[128];
-					sprintf(filename, "%d.jpg", (*it).first);
-					log("face: %s; startframe: %zd[%s]; endframe: %zd[%s], %s\n", tostring((*it).second.facedescriptor).c_str(),
-						(*it).second.startframe, timecode((*it).second.startframe, fps).c_str(),
-						(*it).second.lastframe, timecode((*it).second.lastframe, fps).c_str(), filename);
-
-					if ((*it).second.person)
+					if (s_update)
 					{
-						(*it).second.person->update((*it).second.facedescriptor, (*it).second.counter);
 						s_persons.update();
 					}
+
+					log("%d;%d;%d,%d;%d;%d;%zd[%s];%zd[%s];%s;%s\n",
+						0,//personid
+						(*it).first,
+						(*it).second.startrect.x,
+						(*it).second.startrect.y,
+						(*it).second.startrect.width,
+						(*it).second.startrect.height,
+						(*it).second.startframe, timecode((*it).second.startframe, fps).c_str(),
+						(*it).second.lastframe, timecode((*it).second.lastframe, fps).c_str(),
+						tostring((*it).second.facedescriptor).c_str(),
+						"");//personname
+
+					char filename[128];
+
+					sprintf(filename, "%d-%d-%d-%d-%d-%d.jpg",
+						0,//personid
+						(*it).first,
+						(*it).second.startrect.x,
+						(*it).second.startrect.y,
+						(*it).second.startrect.width,
+						(*it).second.startrect.height);
 
 					{
 						Mat image_;
 						Scalar red = Scalar(0, 0, 255);
 						(*it).second.image.copyTo(image_);
 						cv::rectangle(image_, (*it).second.startrect, red);
-						putText(image_, tostring((*it).first), (*it).second.startrect.tl(), FONT_HERSHEY_DUPLEX, 0.8, red);
 						imwrite(s_imagepath + "/" + filename, image_);
 					}
 					//imwrite(s_imagepath + "/" + filename, (*it).second.image);
