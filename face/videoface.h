@@ -47,24 +47,9 @@ struct StatusFace
 	std::vector<float> facedescriptor;
 	size_t counter;
 	std::vector<SimpleKalmanFilter> filters;
-	std::vector<std::vector<float> > descriptors;
-	//std::vector<float> sum1;
-	//std::vector<float> sum2;
-	float distance( const std::vector<float>& facedescriptor1, const std::vector<float>& facedescriptor2 )
-	{
-		double q = 0;
-		for( int i = 0; i < 128; i++ )
-		{
-			double r = facedescriptor1[i] - facedescriptor2[i];
-			q += r * r;
-		}
-		return sqrt( q );
-	}
 	void append(const std::vector<float>& facedescriptor_)
 	{
-		descriptors.push_back(facedescriptor_);
-
-		if ( counter == 0)
+		if (counter == 0)
 		{
 			facedescriptor = facedescriptor_;
 		}
@@ -78,74 +63,6 @@ struct StatusFace
 
 		counter++;
 	}
-	/*float spread()
-	{
-		if (descriptors.size() == 0)
-		{
-			return -1;
-		}
-		double sum = 0;
-		for (int i = 0; i < descriptors.size(); i++)
-		{
-			sum += distance(descriptors[i], facedescriptor);
-		}
-		return sum / descriptors.size();
-	}*/
-	float spread()
-	{
-		return descriptors.size();
-
-		if( descriptors.size() == 0 )
-		{
-			return -1;
-		}
-		double min = 1;
-
-		for( int i = 0; i < descriptors.size(); i++ )
-		{
-			double d = distance( descriptors[i], facedescriptor );
-			if( d < min )
-			{
-				min = d;
-			}
-		}
-
-		return min;
-	}
-	/*void append( const std::vector<float>& facedescriptor_ )
-	{
-		if( counter == 0 )
-		{
-			facedescriptor = facedescriptor_;
-			sum1 = facedescriptor_;
-			for( int i = 0; i < 128; i++ )
-			{
-				sum2.push_back( facedescriptor_[i] * facedescriptor_[i] );
-			}
-		}
-		else
-		{
-			for( int i = 0; i < 128; i++ )
-			{
-				facedescriptor[i] = (counter * facedescriptor[i] + facedescriptor_[i]) / (counter + 1);
-				sum1[i] += facedescriptor_[i];
-				sum2[i] += facedescriptor_[i] * facedescriptor_[i];
-			}
-		}
-
-		counter++;
-	}
-	float spread()
-	{
-		double q = 0;
-
-		for( int i = 0; i < 128; i++ )
-		{
-			q += (sum2[i] - sum1[i] * sum1[i] / counter) / counter;
-		}
-
-		return sqrt( q );
-	}*/
 };
 
 struct FrameFace

@@ -371,7 +371,7 @@ void VideoFace::process(const string &videosource)
 				s_persons.update();
 			}
 
-			log("%d;%d;%d,%d;%d;%d;%zd[%s];%zd[%s];%s;%s(%f)\n",
+			log("%d;%d;%d,%d;%d;%d;%zd[%s];%zd[%s];%s;%s\n",
 				0,//personid
 				(*it).first,
 				(*it).second.startrect.x,
@@ -381,8 +381,7 @@ void VideoFace::process(const string &videosource)
 				(*it).second.startframe, timecode((*it).second.startframe, fps).c_str(),
 				(*it).second.lastframe, timecode((*it).second.lastframe, fps).c_str(),
 				tostring((*it).second.facedescriptor).c_str(),
-				"",//personname
-				(*it).second.spread());
+				"");//personname
 
 			char filename[128];
 
@@ -571,18 +570,17 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 						s_persons.update();
 					}
 
-					log("%d;%d;%d,%d;%d;%d;%zd[%s];%zd[%s];%s;%s(%f)\n",
+					log("%d;%d;%d,%d;%d;%d;%zd[%s];%zd[%s];%s;%s\n",
 						0,//personid
 						(*it).first,
 						(*it).second.startrect.x,
 						(*it).second.startrect.y,
 						(*it).second.startrect.width,
 						(*it).second.startrect.height,
-						(*it).second.startframe, timecode((*it).second.startframe, fps).c_str(),
-						(*it).second.lastframe, timecode((*it).second.lastframe, fps).c_str(),
-						tostring((*it).second.facedescriptor).c_str(),
-						"",//personname
-						(*it).second.spread());
+						(*it).second.startframe, timecode( (*it).second.startframe, fps ).c_str(),
+						(*it).second.lastframe, timecode( (*it).second.lastframe, fps ).c_str(),
+						tostring( (*it).second.facedescriptor ).c_str(),
+						"");//personname
 
 					char filename[128];
 
