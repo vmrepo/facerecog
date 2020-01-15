@@ -270,8 +270,8 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 			std::vector<float> facedescriptor;
 			copy(facedescriptors[j], facedescriptor);
 
-			PersonFace &person = s_persons.get(facedescriptor);
-			person.update(facedescriptor, 1, s_personname);
+			PersonFace &person = s_persons.get(facedescriptor, 0);
+			person.update(facedescriptor, 0, 1, s_personname);
 
 			if (s_update)
 			{

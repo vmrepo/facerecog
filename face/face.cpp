@@ -50,7 +50,8 @@ enum Status
 
 int main(int argc, char** argv)
 {
-	setlocale(LC_ALL, "");
+	//если раскоментить atof будет рассчитывать на ','
+	//setlocale(LC_ALL, "");
 
 	char* path = strdup(argv[0]);
 

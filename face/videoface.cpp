@@ -208,36 +208,6 @@ void VideoFace::savemaxfaceid(int id)
 	}
 }
 
-string VideoFace::tostring(const std::vector<float>& facedescriptor)
-{
-	char buf[64];
-
-	string res;
-
-	for (int i = 0; i < 128; i++)
-	{
-		sprintf(buf, "%f", facedescriptor[i]);
-		if (i != 0)
-		{
-			res += " ";
-		}
-		res += buf;
-	}
-
-	return res;
-}
-
-double VideoFace::distance(const std::vector<float>& facedescriptor1, const std::vector<float>& facedescriptor2)
-{
-	double q = 0;
-	for (int i = 0; i < 128; i++)
-	{
-		double r = facedescriptor1[i] - facedescriptor2[i];
-		q += r * r;
-	}
-	return sqrt(q);
-}
-
 void VideoFace::copy(const dlib::matrix<float, 0, 1>& facedescriptorsrc, std::vector<float>& facedescriptordst)
 {
 	facedescriptordst.clear();
@@ -380,7 +350,7 @@ void VideoFace::process(const string &videosource)
 				(*it).second.startrect.height, 
 				(*it).second.startframe, timecode((*it).second.startframe, fps).c_str(),
 				(*it).second.lastframe, timecode((*it).second.lastframe, fps).c_str(),
-				tostring((*it).second.facedescriptor).c_str(),
+				PersonFace::tostring((*it).second.facedescriptor).c_str(),
 				"");//personname
 
 			char filename[128];
@@ -479,7 +449,7 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 					//double iou = (double)((*it).second.lastrect & face.rect).area() / (double)((*it).second.lastrect | face.rect).area();
 					double dis = sqrt(pow(((*it).second.lastrect.x + (double)(*it).second.lastrect.width / 2 - face.rect.x - (double)face.rect.width / 2) / framewidth, 2)
 						+ pow(((*it).second.lastrect.y + (double)(*it).second.lastrect.height / 2 - face.rect.y - (double)face.rect.height / 2) / frameheight, 2));
-					double len = distance((*it).second.facedescriptor, face.facedescriptor);
+					double len = PersonFace::distance((*it).second.facedescriptor, face.facedescriptor);
 
 					if (len < threshold_len && dis < threshold_dis/* && iou < threshold_iou*/)
 					{
@@ -505,6 +475,7 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 				status[faceid].startframe = start + i * step;
 				status[faceid].startrect = face.rect;
 				status[faceid].counter = 0;
+				status[faceid].deviation = 0;
 
 				if (s_kalman)
 				{
@@ -579,7 +550,7 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 						(*it).second.startrect.height,
 						(*it).second.startframe, timecode( (*it).second.startframe, fps ).c_str(),
 						(*it).second.lastframe, timecode( (*it).second.lastframe, fps ).c_str(),
-						tostring( (*it).second.facedescriptor ).c_str(),
+						PersonFace::tostring( (*it).second.facedescriptor ).c_str(),
 						"");//personname
 
 					char filename[128];

@@ -45,6 +45,7 @@ struct StatusFace
 	Rect lastrect;
 	size_t missedframes;
 	std::vector<float> facedescriptor;
+	float deviation;
 	size_t counter;
 	std::vector<SimpleKalmanFilter> filters;
 	void append(const std::vector<float>& facedescriptor_)
@@ -52,16 +53,13 @@ struct StatusFace
 		if (counter == 0)
 		{
 			facedescriptor = facedescriptor_;
+			deviation = 0;
+			counter = 1;
 		}
 		else
 		{
-			for (int i = 0; i < 128; i++)
-			{
-				facedescriptor[i] = (counter * facedescriptor[i] + facedescriptor_[i]) / (counter + 1);
-			}
+			facedescriptor = PersonFace::aggregate(facedescriptor, deviation, counter, facedescriptor_, 0, 1, &deviation, &counter);
 		}
-
-		counter++;
 	}
 };
 
@@ -81,8 +79,6 @@ struct VideoFace
 	static int restoremaxfaceid();
 	static void savemaxfaceid(int id);
 
-	static string tostring(const std::vector<float>& facedescriptor);
-	static double distance(const std::vector<float>& facedescriptor1, const std::vector<float>& facedescriptor2);
 	static void copy(const dlib::matrix<float, 0, 1>& facedescriptorsrc, std::vector<float>& facedescriptordst);
 
 	static bool init(const string &path);

@@ -3,6 +3,11 @@
 
 #include "personsface.h"
 
+#if _WIN32 || _WIN64
+#define strcasecmp _stricmp
+#define strdup _strdup
+#endif
+
 string PersonsFace::s_filepath;
 vector<PersonFace> PersonsFace::s_persons;
 int PersonsFace::s_maxpersonid;
@@ -85,16 +90,40 @@ char* trim(char* s)
 	return trimleft(trimright(s));
 }
 
-string PersonsFace::tostring( const std::vector<float>& facedescriptor )
+vector<float> PersonFace::parse(const char* str)
+{
+	vector<float> facedescriptor;
+
+	char *p = strdup(str);
+
+	int i = 0;
+	char *ptr;
+
+	for (char *q = strtok_r(p, " ", &ptr); q; q = strtok_r(NULL, " ", &ptr))
+	{
+		if (i == 128)
+		{
+			break;
+		}
+
+		facedescriptor.push_back(float(atof(trim(q))));
+	}
+
+	free(p);
+
+	return facedescriptor;
+}
+
+string PersonFace::tostring(const vector<float>& facedescriptor)
 {
 	char buf[64];
 
 	string res;
 
-	for( int i = 0; i < 128; i++ )
+	for (int i = 0; i < 128; i++)
 	{
-		sprintf( buf, "%f", facedescriptor[i] );
-		if( i != 0 )
+		sprintf(buf, "%f", facedescriptor[i]);
+		if (i != 0)
 		{
 			res += " ";
 		}
@@ -104,15 +133,63 @@ string PersonsFace::tostring( const std::vector<float>& facedescriptor )
 	return res;
 }
 
-double PersonsFace::distance( const std::vector<float>& facedescriptor1, const std::vector<float>& facedescriptor2 )
+double PersonFace::distance(const vector<float>& facedescriptor1, const vector<float>& facedescriptor2)
 {
 	double q = 0;
-	for( int i = 0; i < 128; i++ )
+	for (int i = 0; i < 128; i++)
 	{
 		double r = facedescriptor1[i] - facedescriptor2[i];
 		q += r * r;
 	}
-	return sqrt( q );
+	return sqrt(q);
+}
+
+vector<float> PersonFace::subtract(const vector<float>& facedescriptor1, const vector<float>& facedescriptor2)
+{
+	vector<float> facedescriptor;
+
+	for (int i = 0; i < 128; i++)
+	{
+		facedescriptor.push_back(facedescriptor1[i] - facedescriptor2[i]);
+	}
+
+	return facedescriptor;
+}
+
+double PersonFace::scalar(const vector<float>& facedescriptor1, const vector<float>& facedescriptor2)
+{
+	double r = 0;
+
+	for (int i = 0; i < 128; i++)
+	{
+		r += facedescriptor1[i] * facedescriptor2[i];
+	}
+
+	return r;
+}
+
+vector<float> PersonFace::aggregate(const vector<float>& facedescriptor1, float deviation1, size_t counter1,
+			const vector<float>& facedescriptor2, float deviation2, size_t counter2,
+			float* deviation, size_t* counter)
+{
+	vector<float> facedescriptor;
+
+	for (int i = 0; i < 128; i++)
+	{
+		facedescriptor.push_back((counter1 * facedescriptor1[i] + counter2 * facedescriptor2[i]) / (counter1 + counter2));
+	}
+
+	(*deviation) = float(sqrt((2 * counter1 * scalar(facedescriptor1, subtract(facedescriptor1, facedescriptor)) +
+		2 * counter2 * scalar(facedescriptor2, subtract(facedescriptor2, facedescriptor)) +
+		(counter1 + counter2) * scalar(facedescriptor, facedescriptor) -
+		counter1 * scalar(facedescriptor1, facedescriptor1) -
+		counter2 * scalar(facedescriptor2, facedescriptor2) +
+		counter1 * deviation1 * deviation1 +
+		counter2 * deviation2 * deviation2) / (counter1 + counter2)));
+
+	(*counter) = counter1 + counter2;
+
+	return facedescriptor;
 }
 
 void PersonsFace::init(const string& filepath )
@@ -159,17 +236,14 @@ void PersonsFace::init(const string& filepath )
 		if (!p)
 			continue;
 
-		{
-			int i = 0;
-			char *ptr;
+		person.deviation = float(atof(trim(p)));
 
-			for (char *q = strtok_r(p, " ", &ptr); q; q = strtok_r(NULL, " ", &ptr))
-			{
-				if (i == 128)
-					break;
-				person.facedescriptor.push_back(float(atof(trim(q))));
-			}
-		}
+		p = strtok_r(NULL, ";", &ptr);
+
+		if (!p)
+			continue;
+
+		person.facedescriptor = PersonFace::parse(trim(p));
 
 		p = strtok_r(NULL, ";", &ptr);
 
@@ -186,29 +260,32 @@ void PersonsFace::update()
 {
 	FILE *fd = fopen(s_filepath.c_str(), "w");
 
-	if (!fd)
+	if( !fd )
+	{
 		return;
+	}
 
 	for (vector<PersonFace>::iterator it = s_persons.begin(); it != s_persons.end(); it++)
 	{
-		fprintf(fd, "%d;%d;%s;%s\n", (*it).id, (*it).counter, tostring((*it).facedescriptor).c_str(), (*it).name.c_str());
+		fprintf(fd, "%d;%zd;%f;%s;%s\n", (*it).id, (*it).counter, (*it).deviation, PersonFace::tostring((*it).facedescriptor).c_str(), (*it).name.c_str());
 	}
 
 	fclose(fd);
 }
 
-PersonFace& PersonsFace::get(const vector<float>& facedescriptor)
+PersonFace& PersonsFace::get(const vector<float>& facedescriptor, float deviation)
 {
 	size_t idx = -1;
 	double best_len = -1;
 
 	double threshold_len = 0.6;
+	double threshold_dev = 0.1;
 
 	for (int i = 0; i < s_persons.size(); i++)
 	{
-		double len = distance(facedescriptor, s_persons[i].facedescriptor);
+		double len = PersonFace::distance(facedescriptor, s_persons[i].facedescriptor);
 
-		if (len < threshold_len)
+		if (len < threshold_len && abs(s_persons[i].deviation - deviation) < threshold_dev)//?
 		{
 			if (best_len == -1 || len < best_len)
 			{
@@ -223,6 +300,7 @@ PersonFace& PersonsFace::get(const vector<float>& facedescriptor)
 		PersonFace personface;
 		personface.id = ++s_maxpersonid;
 		personface.counter = 0;
+		personface.deviation = 0;
 		s_persons.push_back( personface );
 		idx = s_persons.size() - 1;
 	}
