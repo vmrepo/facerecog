@@ -24,12 +24,14 @@ struct PersonFace {
 	float deviation;
 	vector<float> facedescriptor;
 	string name;
+	PersonFace* next;
+
 	void update(const vector<float>& facedescriptor_, float deviation_, size_t counter_, const string& name_ = "")
 	{
 		if (counter == 0)
 		{
 			facedescriptor = facedescriptor_;
-			deviation_ = deviation_;
+			deviation = deviation_;
 			counter = counter_;
 		}
 		else
@@ -42,6 +44,58 @@ struct PersonFace {
 			name = name_;
 		}
 	}
+};
+
+struct ListFace
+{
+	ListFace()
+	{
+		top = nullptr;
+		bottom = nullptr;
+	}
+
+private:
+	ListFace(const ListFace& listFace);
+	ListFace& operator=(const ListFace& listFace);
+
+public:
+	virtual ~ListFace()
+	{
+		for (PersonFace* person = bottom; person != nullptr;)
+		{
+			PersonFace* next = person->next;
+			delete person;
+			person = next;
+		}
+	}
+
+	PersonFace* Bottom()
+	{
+		return bottom;
+	};
+
+	PersonFace* Add()
+	{
+		PersonFace *person = new PersonFace();
+		person->next = nullptr;
+
+		if (bottom == nullptr)
+		{
+			bottom = person;
+		}
+		else
+		{
+			top->next = person;
+		}
+
+		top = person;
+
+		return top;
+	}
+
+private:
+	PersonFace* top;
+	PersonFace* bottom;
 };
 
 struct PersonsFace
@@ -57,7 +111,7 @@ struct PersonsFace
 	virtual ~PersonsFace();
 
 	static string s_filepath;
-	static vector<PersonFace> s_persons;
+	static ListFace s_persons;
 	static int s_maxpersonid;
 };
 

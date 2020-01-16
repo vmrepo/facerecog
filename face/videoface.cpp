@@ -336,13 +336,16 @@ void VideoFace::process(const string &videosource)
 	{
 		if ((*it).second.lastframe - (*it).second.startframe + 1 >= s_neededframes)
 		{
+			PersonFace &person = s_persons.get((*it).second.facedescriptor, (*it).second.deviation);
+			person.update((*it).second.facedescriptor, (*it).second.deviation, (*it).second.counter);
+
 			if (s_update)
 			{
 				s_persons.update();
 			}
 
 			log("%d;%d;%d,%d;%d;%d;%zd[%s];%zd[%s];%s;%s\n",
-				0,//personid
+				person.id,
 				(*it).first,
 				(*it).second.startrect.x,
 				(*it).second.startrect.y, 
@@ -351,12 +354,12 @@ void VideoFace::process(const string &videosource)
 				(*it).second.startframe, timecode((*it).second.startframe, fps).c_str(),
 				(*it).second.lastframe, timecode((*it).second.lastframe, fps).c_str(),
 				PersonFace::tostring((*it).second.facedescriptor).c_str(),
-				"");//personname
+				person.name.c_str());
 
 			char filename[128];
 
 			sprintf(filename, "%d-%d-%d-%d-%d-%d.jpg",
-				0,//personid
+				person.id,
 				(*it).first,
 				(*it).second.startrect.x,
 				(*it).second.startrect.y,
@@ -536,27 +539,30 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 			{
 				if ((*it).second.lastframe - (*it).second.startframe + 1 >= s_neededframes)
 				{
+					PersonFace &person = s_persons.get((*it).second.facedescriptor, (*it).second.deviation);
+					person.update((*it).second.facedescriptor, (*it).second.deviation, (*it).second.counter);
+
 					if (s_update)
 					{
 						s_persons.update();
 					}
 
 					log("%d;%d;%d,%d;%d;%d;%zd[%s];%zd[%s];%s;%s\n",
-						0,//personid
+						person.id,
 						(*it).first,
 						(*it).second.startrect.x,
 						(*it).second.startrect.y,
 						(*it).second.startrect.width,
 						(*it).second.startrect.height,
-						(*it).second.startframe, timecode( (*it).second.startframe, fps ).c_str(),
-						(*it).second.lastframe, timecode( (*it).second.lastframe, fps ).c_str(),
-						PersonFace::tostring( (*it).second.facedescriptor ).c_str(),
-						"");//personname
+						(*it).second.startframe, timecode((*it).second.startframe, fps).c_str(),
+						(*it).second.lastframe, timecode((*it).second.lastframe, fps).c_str(),
+						PersonFace::tostring((*it).second.facedescriptor).c_str(),
+						person.name.c_str());
 
 					char filename[128];
 
 					sprintf(filename, "%d-%d-%d-%d-%d-%d.jpg",
-						0,//personid
+						person.id,
 						(*it).first,
 						(*it).second.startrect.x,
 						(*it).second.startrect.y,

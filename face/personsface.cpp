@@ -9,7 +9,7 @@
 #endif
 
 string PersonsFace::s_filepath;
-vector<PersonFace> PersonsFace::s_persons;
+ListFace PersonsFace::s_persons;
 int PersonsFace::s_maxpersonid;
 
 char* strtok_r(char* s, const char* delim, char** ptrptr)
@@ -192,7 +192,7 @@ vector<float> PersonFace::aggregate(const vector<float>& facedescriptor1, float 
 	return facedescriptor;
 }
 
-void PersonsFace::init(const string& filepath )
+void PersonsFace::init(const string& filepath)
 {
 	s_filepath = filepath;
 
@@ -202,13 +202,15 @@ void PersonsFace::init(const string& filepath )
 
 	FILE *fd = fopen(filepath.c_str(), "r");
 
-	if( !fd )
+	if (!fd)
 		return;
+
+	PersonFace* person = nullptr;
 
 	while (fgets(buf, 4096, fd))
 	{
-		s_persons.push_back(PersonFace());
-		PersonFace& person = s_persons.back();
+		if (person == nullptr)
+			person = s_persons.Add();
 
 		char *p, *ptr;
 
@@ -217,40 +219,38 @@ void PersonsFace::init(const string& filepath )
 		if (!p)
 			continue;
 
-		person.id = atoi(trim(p));
+		person->id = atoi(trim(p));
 
-		if (person.id > s_maxpersonid)
-		{
-			s_maxpersonid = person.id;
-		}
+		if (person->id > s_maxpersonid)
+			s_maxpersonid = person->id;
 
 		p = strtok_r(NULL, ";", &ptr);
 
 		if (!p)
 			continue;
 
-		person.counter = atoi(trim(p));
+		person->counter = atoi(trim(p));
 
 		p = strtok_r(NULL, ";", &ptr);
 
 		if (!p)
 			continue;
 
-		person.deviation = float(atof(trim(p)));
+		person->deviation = float(atof(trim(p)));
 
 		p = strtok_r(NULL, ";", &ptr);
 
 		if (!p)
 			continue;
 
-		person.facedescriptor = PersonFace::parse(trim(p));
+		person->facedescriptor = PersonFace::parse(trim(p));
 
 		p = strtok_r(NULL, ";", &ptr);
 
-		if( !p )
-			continue;
+		if (p)
+			person->name = trim(p);
 
-		person.name = trim(p);
+		person = nullptr;
 	}
 
 	fclose(fd);
@@ -265,9 +265,9 @@ void PersonsFace::update()
 		return;
 	}
 
-	for (vector<PersonFace>::iterator it = s_persons.begin(); it != s_persons.end(); it++)
+	for (PersonFace* person = s_persons.Bottom(); person != nullptr; person = person->next)
 	{
-		fprintf(fd, "%d;%zd;%f;%s;%s\n", (*it).id, (*it).counter, (*it).deviation, PersonFace::tostring((*it).facedescriptor).c_str(), (*it).name.c_str());
+		fprintf(fd, "%d;%zd;%f;%s;%s\n", person->id, person->counter, person->deviation, PersonFace::tostring(person->facedescriptor).c_str(), person->name.c_str());
 	}
 
 	fclose(fd);
@@ -275,37 +275,37 @@ void PersonsFace::update()
 
 PersonFace& PersonsFace::get(const vector<float>& facedescriptor, float deviation)
 {
-	size_t idx = -1;
+	PersonFace* best_person = nullptr;
 	double best_len = -1;
 
 	double threshold_len = 0.6;
-	double threshold_dev = 0.1;
+	double factor_dev = 1.1;
 
-	for (int i = 0; i < s_persons.size(); i++)
+	for (PersonFace* person = s_persons.Bottom(); person != nullptr; person = person->next)
 	{
-		double len = PersonFace::distance(facedescriptor, s_persons[i].facedescriptor);
+		double len = PersonFace::distance(facedescriptor, person->facedescriptor);
 
-		if (len < threshold_len && abs(s_persons[i].deviation - deviation) < threshold_dev)//?
+		if (len < threshold_len && len < person->deviation * factor_dev)
 		{
 			if (best_len == -1 || len < best_len)
 			{
 				best_len = len;
-				idx = i;
+				best_person = person;
 			}
 		}
 	}
 
-	if (idx == -1)
+	if (best_person != nullptr)
 	{
-		PersonFace personface;
-		personface.id = ++s_maxpersonid;
-		personface.counter = 0;
-		personface.deviation = 0;
-		s_persons.push_back( personface );
-		idx = s_persons.size() - 1;
+		return *best_person;
 	}
 
-	return s_persons[idx];
+	PersonFace* person = s_persons.Add();
+	person->id = ++s_maxpersonid;
+	person->counter = 0;
+	person->deviation = 0;
+
+	return *person;
 }
 
 PersonsFace::PersonsFace()
