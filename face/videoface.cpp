@@ -336,8 +336,17 @@ void VideoFace::process(const string &videosource)
 	{
 		if ((*it).second.lastframe - (*it).second.startframe + 1 >= s_neededframes)
 		{
-			PersonFace &person = s_persons.get((*it).second.facedescriptor, (*it).second.deviation);
-			person.update((*it).second.facedescriptor, (*it).second.deviation, (*it).second.counter);
+			PersonFace* person = s_persons.get((*it).second.person->facedescriptor);
+			if (person)
+			{
+				person->update((*it).second.person->facedescriptor, (*it).second.person->deviation, (*it).second.person->counter);
+				delete (*it).second.person;
+				(*it).second.person = person;
+			}
+			else
+			{
+				s_persons.add((*it).second.person);
+			}
 
 			if (s_update)
 			{
@@ -345,7 +354,7 @@ void VideoFace::process(const string &videosource)
 			}
 
 			log("%d;%d;%d,%d;%d;%d;%zd[%s];%zd[%s];%s;%s\n",
-				person.id,
+				(*it).second.person->id,
 				(*it).first,
 				(*it).second.startrect.x,
 				(*it).second.startrect.y, 
@@ -353,13 +362,13 @@ void VideoFace::process(const string &videosource)
 				(*it).second.startrect.height, 
 				(*it).second.startframe, timecode((*it).second.startframe, fps).c_str(),
 				(*it).second.lastframe, timecode((*it).second.lastframe, fps).c_str(),
-				PersonFace::tostring((*it).second.facedescriptor).c_str(),
-				person.name.c_str());
+				PersonFace::tostring((*it).second.person->facedescriptor).c_str(),
+				(*it).second.person->name.c_str());
 
 			char filename[128];
 
 			sprintf(filename, "%d-%d-%d-%d-%d-%d.jpg",
-				person.id,
+				(*it).second.person->id,
 				(*it).first,
 				(*it).second.startrect.x,
 				(*it).second.startrect.y,
@@ -374,6 +383,11 @@ void VideoFace::process(const string &videosource)
 				imwrite(s_imagepath + "/" + filename, image_);
 			}
 			//imwrite(s_imagepath + "/" + filename, (*it).second.image);
+		}
+
+		if ((*it).second.person->id == 0)
+		{
+			delete (*it).second.person;
 		}
 	}
 
@@ -452,7 +466,7 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 					//double iou = (double)((*it).second.lastrect & face.rect).area() / (double)((*it).second.lastrect | face.rect).area();
 					double dis = sqrt(pow(((*it).second.lastrect.x + (double)(*it).second.lastrect.width / 2 - face.rect.x - (double)face.rect.width / 2) / framewidth, 2)
 						+ pow(((*it).second.lastrect.y + (double)(*it).second.lastrect.height / 2 - face.rect.y - (double)face.rect.height / 2) / frameheight, 2));
-					double len = PersonFace::distance((*it).second.facedescriptor, face.facedescriptor);
+					double len = PersonFace::distance((*it).second.person->facedescriptor, face.facedescriptor);
 
 					if (len < threshold_len && dis < threshold_dis/* && iou < threshold_iou*/)
 					{
@@ -477,8 +491,11 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 				frames[i].copyTo(status[faceid].image);
 				status[faceid].startframe = start + i * step;
 				status[faceid].startrect = face.rect;
-				status[faceid].counter = 0;
-				status[faceid].deviation = 0;
+				status[faceid].person = new PersonFace();
+				status[faceid].person->id = 0;
+				status[faceid].person->next = nullptr;
+				status[faceid].person->counter = 0;
+				status[faceid].person->deviation = 0;
 
 				if (s_kalman)
 				{
@@ -498,7 +515,7 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 				{
 					vectfaces[k][faceid] = FrameFace();
 					vectfaces[k][faceid].rect = status[faceid].lastrect;
-					vectfaces[k][faceid].facedescriptor = status[faceid].facedescriptor;
+					vectfaces[k][faceid].facedescriptor = status[faceid].person->facedescriptor;
 				}
 			}
 
@@ -515,7 +532,7 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 			status[faceid].lastframe = start + i * step;
 			status[faceid].lastrect = face.rect;
 			status[faceid].missedframes = 0;
-			status[faceid].append(face.facedescriptor);
+			status[faceid].person->update(face.facedescriptor, 0, 1);
 
 			//инфа об ограничивающих боксах лиц для кадра
 			if (status[faceid].lastframe - status[faceid].startframe + 1 >= s_neededframes)
@@ -523,7 +540,7 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 				faces[faceid] = FrameFace();
 				faces[faceid].rect = face.rect;
 				faces[faceid].face = face.face;
-				faces[faceid].facedescriptor = status[faceid].facedescriptor;
+				faces[faceid].facedescriptor = status[faceid].person->facedescriptor;
 			}
 		}
 
@@ -539,8 +556,17 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 			{
 				if ((*it).second.lastframe - (*it).second.startframe + 1 >= s_neededframes)
 				{
-					PersonFace &person = s_persons.get((*it).second.facedescriptor, (*it).second.deviation);
-					person.update((*it).second.facedescriptor, (*it).second.deviation, (*it).second.counter);
+					PersonFace* person = s_persons.get((*it).second.person->facedescriptor);
+					if (person)
+					{
+						person->update((*it).second.person->facedescriptor, (*it).second.person->deviation, (*it).second.person->counter);
+						delete (*it).second.person;
+						(*it).second.person = person;
+					}
+					else
+					{
+						s_persons.add((*it).second.person);
+					}
 
 					if (s_update)
 					{
@@ -548,7 +574,7 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 					}
 
 					log("%d;%d;%d,%d;%d;%d;%zd[%s];%zd[%s];%s;%s\n",
-						person.id,
+						(*it).second.person->id,
 						(*it).first,
 						(*it).second.startrect.x,
 						(*it).second.startrect.y,
@@ -556,13 +582,13 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 						(*it).second.startrect.height,
 						(*it).second.startframe, timecode((*it).second.startframe, fps).c_str(),
 						(*it).second.lastframe, timecode((*it).second.lastframe, fps).c_str(),
-						PersonFace::tostring((*it).second.facedescriptor).c_str(),
-						person.name.c_str());
+						PersonFace::tostring((*it).second.person->facedescriptor).c_str(),
+						(*it).second.person->name.c_str());
 
 					char filename[128];
 
 					sprintf(filename, "%d-%d-%d-%d-%d-%d.jpg",
-						person.id,
+						(*it).second.person->id,
 						(*it).first,
 						(*it).second.startrect.x,
 						(*it).second.startrect.y,
@@ -578,6 +604,12 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 					}
 					//imwrite(s_imagepath + "/" + filename, (*it).second.image);
 				}
+
+				if ((*it).second.person->id == 0)
+				{
+					delete (*it).second.person;
+				}
+
 				it = status.erase(it);
 			}
 			else

@@ -273,7 +273,7 @@ void PersonsFace::update()
 	fclose(fd);
 }
 
-PersonFace& PersonsFace::get(const vector<float>& facedescriptor, float deviation)
+PersonFace* PersonsFace::get(const vector<float>& facedescriptor)
 {
 	PersonFace* best_person = nullptr;
 	double best_len = -1;
@@ -295,17 +295,13 @@ PersonFace& PersonsFace::get(const vector<float>& facedescriptor, float deviatio
 		}
 	}
 
-	if (best_person != nullptr)
-	{
-		return *best_person;
-	}
+	return best_person;
+}
 
-	PersonFace* person = s_persons.Add();
+void PersonsFace::add(PersonFace* person)
+{
+	s_persons.Add(person);
 	person->id = ++s_maxpersonid;
-	person->counter = 0;
-	person->deviation = 0;
-
-	return *person;
 }
 
 PersonsFace::PersonsFace()

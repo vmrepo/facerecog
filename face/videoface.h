@@ -44,23 +44,8 @@ struct StatusFace
 	Rect startrect;
 	Rect lastrect;
 	size_t missedframes;
-	std::vector<float> facedescriptor;
-	float deviation;
-	size_t counter;
+	PersonFace *person;
 	std::vector<SimpleKalmanFilter> filters;
-	void append(const std::vector<float>& facedescriptor_)
-	{
-		if (counter == 0)
-		{
-			facedescriptor = facedescriptor_;
-			deviation = 0;
-			counter = 1;
-		}
-		else
-		{
-			facedescriptor = PersonFace::aggregate(facedescriptor, deviation, counter, facedescriptor_, 0, 1, &deviation, &counter);
-		}
-	}
 };
 
 struct FrameFace

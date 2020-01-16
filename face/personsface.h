@@ -74,9 +74,13 @@ public:
 		return bottom;
 	};
 
-	PersonFace* Add()
+	PersonFace* Add(PersonFace *person = nullptr)
 	{
-		PersonFace *person = new PersonFace();
+		if (!person)
+		{
+			person = new PersonFace();
+		}
+
 		person->next = nullptr;
 
 		if (bottom == nullptr)
@@ -102,7 +106,8 @@ struct PersonsFace
 {
 	static void init(const string& filepath);
 	static void update();
-	static PersonFace& get(const vector<float>& facedescriptor, float deviation);
+	static PersonFace* get(const vector<float>& facedescriptor);
+	static void add(PersonFace* person);
 
 	PersonsFace();
 	PersonsFace(const PersonsFace& personsface);
