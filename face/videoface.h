@@ -78,7 +78,6 @@ struct VideoFace
 
 	static string s_logfile;
 	static string s_imagepath;
-	static string s_personpath;
 	static bool s_show;
 	static bool s_kalman;
 	static int s_bufsize;
@@ -88,7 +87,6 @@ struct VideoFace
 	static int s_neededframes;
 	static int s_maxfaceid;
 	static bool s_update;
-	static PersonsFace s_persons;
 };
 
 #endif // __VIDEOFACE_H__

@@ -71,11 +71,9 @@ anet_type ImageFace_net;
 
 string ImageFace::s_logfile = "";
 string ImageFace::s_imagepath = "./";
-string ImageFace::s_personpath = "./";
 int ImageFace::s_maxfaceid = 0;
 bool ImageFace::s_update = false;
 string ImageFace::s_personname = "";
-PersonsFace ImageFace::s_persons;
 
 string ImageFace::tostring(size_t i)
 {
@@ -204,8 +202,6 @@ bool ImageFace::init(const string &path)
 	deserialize(shapefile) >> SP;
 	deserialize(resnetfile) >> NET;
 
-	s_persons.init(s_personpath + "/" + "persons.csv");
-
 	return true;
 }
 
@@ -270,18 +266,18 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 			std::vector<float> facedescriptor;
 			copy(facedescriptors[j], facedescriptor);
 
-			PersonFace* person = s_persons.get(facedescriptor);
+			PersonFace* person = PersonsFace::get(facedescriptor);
 			if (!person)
 			{
 				person = new PersonFace();
 				person->counter = 0;
-				s_persons.add(person);
+				PersonsFace::add(person);
 			}
 			person->update(facedescriptor, 0, 1, s_personname);
 
 			if (s_update)
 			{
-				s_persons.update();
+				PersonsFace::update();
 			}
 
 			titles.push_back(tostring(person->id) + " " + person->name);

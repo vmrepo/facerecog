@@ -279,7 +279,7 @@ PersonFace* PersonsFace::get(const vector<float>& facedescriptor)
 	double best_len = -1;
 
 	double threshold_len = 0.6;
-	double factor_dev = 1.1;
+	double factor_dev = 1.4;
 
 	for (PersonFace* person = s_persons.Bottom(); person != nullptr; person = person->next)
 	{

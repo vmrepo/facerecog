@@ -63,6 +63,7 @@ int main(int argc, char** argv)
 
 	free(path);
 
+	string personpath = "./";
 	vector<string> images;
 	vector<string> outs;
 	string video = "";
@@ -296,8 +297,7 @@ int main(int argc, char** argv)
 
 			case ExpectPersonPath:
 			{
-				ImageFace::s_personpath = argv[i];
-				VideoFace::s_personpath = argv[i];
+				personpath = argv[i];
 
 				status = ExpectAny;
 			}
@@ -336,10 +336,15 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
-	if (ImageFace::init(pathself))
+	PersonsFace::init(personpath + "/" + "persons.csv");
+
+	if (images.size())
 	{
-		ImageFace::s_maxfaceid = ImageFace::restoremaxfaceid();
-		ImageFace::process(images, outs);
+		if (ImageFace::init(pathself))
+		{
+			ImageFace::s_maxfaceid = ImageFace::restoremaxfaceid();
+			ImageFace::process(images, outs);
+		}
 	}
 
 	if (video.size())

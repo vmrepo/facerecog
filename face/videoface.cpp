@@ -72,7 +72,6 @@ anet_type VideoFace_net;
 
 string VideoFace::s_logfile = "";
 string VideoFace::s_imagepath = "./";
-string VideoFace::s_personpath = "./";
 bool VideoFace::s_show = false;
 bool VideoFace::s_kalman = true;
 int VideoFace::s_bufsize = 5;
@@ -82,7 +81,6 @@ int VideoFace::s_missedframes = 50;
 int VideoFace::s_neededframes = 10;
 int VideoFace::s_maxfaceid = 0;
 bool VideoFace::s_update = false;
-PersonsFace VideoFace::s_persons;
 
 SimpleKalmanFilter::SimpleKalmanFilter(float mea_e, float est_e, float q)
 {
@@ -242,8 +240,6 @@ bool VideoFace::init(const string &path)
 	deserialize(shapefile) >> SP;
 	deserialize(resnetfile) >> NET;
 
-	s_persons.init(s_personpath + "/" + "persons.csv");
-
 	return true;
 }
 
@@ -336,23 +332,6 @@ void VideoFace::process(const string &videosource)
 	{
 		if ((*it).second.lastframe - (*it).second.startframe + 1 >= s_neededframes)
 		{
-			PersonFace* person = s_persons.get((*it).second.person->facedescriptor);
-			if (person)
-			{
-				person->update((*it).second.person->facedescriptor, (*it).second.person->deviation, (*it).second.person->counter);
-				delete (*it).second.person;
-				(*it).second.person = person;
-			}
-			else
-			{
-				s_persons.add((*it).second.person);
-			}
-
-			if (s_update)
-			{
-				s_persons.update();
-			}
-
 			log("%d;%d;%d,%d;%d;%d;%zd[%s];%zd[%s];%s;%s\n",
 				(*it).second.person->id,
 				(*it).first,
@@ -389,6 +368,11 @@ void VideoFace::process(const string &videosource)
 		{
 			delete (*it).second.person;
 		}
+	}
+
+	if( s_update )
+	{
+		PersonsFace::update();
 	}
 
 	log("frames: %zd\n", framecount);
@@ -456,7 +440,7 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 			double best_dis;
 			double best_len;
 			//double threshold_iou = 0.01;
-			double threshold_dis = 0.3;
+			double threshold_dis = 0.2;
 			double threshold_len = 0.6;
 			for (std::map<int, StatusFace>::iterator it = status.begin(); it != status.end(); it++)
 			{
@@ -471,7 +455,7 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 					if (len < threshold_len && dis < threshold_dis/* && iou < threshold_iou*/)
 					{
 						//приоритет либо для дистанции либо для отличия дескрипторов
-						if (faceid == 0 || len < best_len )//dis < best_dis
+						if (faceid == 0 || dis < best_dis)//len < best_len
 						{
 							faceid = (*it).first;
 							//best_iou = iou;
@@ -506,7 +490,7 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 					status[faceid].filters.push_back(SimpleKalmanFilter(frameheight / 10, frameheight / 10, 1.0));//height
 				}
 			}
-			else if (status[faceid].missedframes != 0)
+			else if (status[faceid].missedframes != 0 && status[faceid].person->id != 0)
 			{
 				//нашли лицо, которое было пропущено на нескольких кадрах, теперь на пропущенных кадрах его нужно восстановить - интерполировать
 				//номер кадра, начиная с которого не было обнаружения
@@ -537,6 +521,21 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 			//инфа об ограничивающих боксах лиц для кадра
 			if (status[faceid].lastframe - status[faceid].startframe + 1 >= s_neededframes)
 			{
+				if (status[faceid].person->id == 0)
+				{
+					PersonFace* person = PersonsFace::get(status[faceid].person->facedescriptor);
+					if (person)
+					{
+						person->update(status[faceid].person->facedescriptor, status[faceid].person->deviation, status[faceid].person->counter);
+						delete status[faceid].person;
+						status[faceid].person = person;
+					}
+					else
+					{
+						PersonsFace::add(status[faceid].person);
+					}
+				}
+
 				faces[faceid] = FrameFace();
 				faces[faceid].rect = face.rect;
 				faces[faceid].face = face.face;
@@ -556,23 +555,6 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 			{
 				if ((*it).second.lastframe - (*it).second.startframe + 1 >= s_neededframes)
 				{
-					PersonFace* person = s_persons.get((*it).second.person->facedescriptor);
-					if (person)
-					{
-						person->update((*it).second.person->facedescriptor, (*it).second.person->deviation, (*it).second.person->counter);
-						delete (*it).second.person;
-						(*it).second.person = person;
-					}
-					else
-					{
-						s_persons.add((*it).second.person);
-					}
-
-					if (s_update)
-					{
-						s_persons.update();
-					}
-
 					log("%d;%d;%d,%d;%d;%d;%zd[%s];%zd[%s];%s;%s\n",
 						(*it).second.person->id,
 						(*it).first,
@@ -633,7 +615,8 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 			{
 				Scalar red = Scalar(0, 0, 255);
 				cv::rectangle(frames[i], (*it).second.rect, red);
-				putText(frames[i], tostring((*it).first), (*it).second.rect.tl(), FONT_HERSHEY_DUPLEX, 0.8, red);
+				string title = tostring(status[(*it).first].person->id);
+				putText(frames[i], title, (*it).second.rect.tl(), FONT_HERSHEY_DUPLEX, 0.8, red);
 			}
 
 			imshow(name, frames[i]);
