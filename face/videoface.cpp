@@ -79,6 +79,7 @@ int VideoFace::s_frameskip = 5;
 bool VideoFace::s_interpolation = false;
 int VideoFace::s_missedframes = 50;
 int VideoFace::s_neededframes = 10;
+int VideoFace::s_neededfaces = 10;
 int VideoFace::s_maxfaceid = 0;
 bool VideoFace::s_update = false;
 
@@ -475,6 +476,7 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 				frames[i].copyTo(status[faceid].image);
 				status[faceid].startframe = start + i * step;
 				status[faceid].startrect = face.rect;
+				status[faceid].searchfailed = false;
 				status[faceid].person = new PersonFace();
 				status[faceid].person->id = 0;
 				status[faceid].person->next = nullptr;
@@ -516,21 +518,35 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 			status[faceid].lastframe = start + i * step;
 			status[faceid].lastrect = face.rect;
 			status[faceid].missedframes = 0;
-			status[faceid].person->update(face.facedescriptor, 0, 1);
+
+			//игнорируем на очередном кадре скорее всего фото или статически-неподвижное лицо (т.к. для статистки это вредно)
+			if (status[faceid].lastdescriptor.size() == 0 || PersonFace::distance(status[faceid].lastdescriptor, face.facedescriptor) > 0.15)
+			{
+				status[faceid].lastdescriptor = face.facedescriptor;
+				status[faceid].person->update(face.facedescriptor, 0, 1);
+			}
 
 			//инфа об ограничивающих боксах лиц для кадра
 			if (status[faceid].lastframe - status[faceid].startframe + 1 >= s_neededframes)
 			{
 				if (status[faceid].person->id == 0)
 				{
-					PersonFace* person = PersonsFace::get(status[faceid].person->facedescriptor);
+					PersonFace* person = nullptr;
+
+					//если пробовали найти и не нашли, значит больше не стоит искать
+					if (status[faceid].searchfailed == false)
+					{
+						person = PersonsFace::get(status[faceid].person->facedescriptor);
+						status[faceid].searchfailed = !person;
+					}
+
 					if (person)
 					{
 						person->update(status[faceid].person->facedescriptor, status[faceid].person->deviation, status[faceid].person->counter);
 						delete status[faceid].person;
 						status[faceid].person = person;
 					}
-					else
+					else if (status[faceid].person->counter >= s_neededfaces)
 					{
 						PersonsFace::add(status[faceid].person);
 					}
@@ -615,8 +631,11 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 			{
 				Scalar red = Scalar(0, 0, 255);
 				cv::rectangle(frames[i], (*it).second.rect, red);
-				string title = tostring(status[(*it).first].person->id);
-				putText(frames[i], title, (*it).second.rect.tl(), FONT_HERSHEY_DUPLEX, 0.8, red);
+				if (status[(*it).first].person->id)
+				{
+					string title = tostring(status[(*it).first].person->id);
+					putText(frames[i], title, (*it).second.rect.tl(), FONT_HERSHEY_DUPLEX, 0.8, red);
+				}
 			}
 
 			imshow(name, frames[i]);

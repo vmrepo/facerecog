@@ -202,7 +202,7 @@ int main(int argc, char** argv)
 		{
 			if ((status != ExpectAny && status != ExpectImage && status != ExpectOut) || (images.size() == 0 && video.size() == 0) || (status == ExpectOut && outs.size() == 0))
 			{
-				printf( "Bad parameter %s", argv[i] );
+				printf("Bad parameter %s", argv[i]);
 				UNINIT
 				return 0;
 			}
@@ -218,7 +218,7 @@ int main(int argc, char** argv)
 		{
 			if ((status != ExpectAny && status != ExpectImage && status != ExpectOut) || images.size() == 0 || video.size() != 0 || (status == ExpectOut && outs.size() == 0))
 			{
-				printf( "Bad parameter %s", argv[i] );
+				printf("Bad parameter %s", argv[i]);
 				UNINIT
 				return 0;
 			}

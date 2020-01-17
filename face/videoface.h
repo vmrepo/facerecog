@@ -44,6 +44,8 @@ struct StatusFace
 	Rect startrect;
 	Rect lastrect;
 	size_t missedframes;
+	std::vector<float> lastdescriptor;
+	bool searchfailed;
 	PersonFace *person;
 	std::vector<SimpleKalmanFilter> filters;
 };
@@ -85,6 +87,7 @@ struct VideoFace
 	static bool s_interpolation;
 	static int s_missedframes;
 	static int s_neededframes;
+	static int s_neededfaces;
 	static int s_maxfaceid;
 	static bool s_update;
 };
