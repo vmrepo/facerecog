@@ -74,7 +74,7 @@ string VideoFace::s_logfile = "";
 string VideoFace::s_imagepath = "./";
 bool VideoFace::s_show = false;
 bool VideoFace::s_kalman = true;
-int VideoFace::s_bufsize = 5;
+int VideoFace::s_bufsize = 10;
 int VideoFace::s_frameskip = 5;
 bool VideoFace::s_interpolation = false;
 int VideoFace::s_missedframes = 50;
@@ -331,7 +331,7 @@ void VideoFace::process(const string &videosource)
 
 	for (std::map<int, StatusFace>::iterator it = status.begin(); it != status.end(); it++)
 	{
-		if ((*it).second.lastframe - (*it).second.startframe + 1 >= s_neededframes)
+		if ((*it).second.lastframe - (*it).second.startframe + 1 >= s_neededframes && (*it).second.person->id != 0)
 		{
 			log("%d;%d;%d,%d;%d;%d;%zd[%s];%zd[%s];%s;%s\n",
 				(*it).second.person->id,
@@ -520,7 +520,7 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 			status[faceid].missedframes = 0;
 
 			//игнорируем на очередном кадре скорее всего фото или статически-неподвижное лицо (т.к. для статистки это вредно)
-			if (status[faceid].lastdescriptor.size() == 0 || PersonFace::distance(status[faceid].lastdescriptor, face.facedescriptor) > 0.15)
+			if (status[faceid].lastdescriptor.size() == 0 || PersonFace::distance(status[faceid].lastdescriptor, face.facedescriptor) > 0.1)
 			{
 				status[faceid].lastdescriptor = face.facedescriptor;
 				status[faceid].person->update(face.facedescriptor, 0, 1);
@@ -546,7 +546,7 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 						delete status[faceid].person;
 						status[faceid].person = person;
 					}
-					else if (status[faceid].person->counter >= s_neededfaces)
+					else if (status[faceid].person->counter >= s_neededfaces && s_update)
 					{
 						PersonsFace::add(status[faceid].person);
 					}
@@ -569,7 +569,7 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 
 			if ((*it).second.missedframes >= s_missedframes)
 			{
-				if ((*it).second.lastframe - (*it).second.startframe + 1 >= s_neededframes)
+				if ((*it).second.lastframe - (*it).second.startframe + 1 >= s_neededframes && (*it).second.person->id != 0)
 				{
 					log("%d;%d;%d,%d;%d;%d;%zd[%s];%zd[%s];%s;%s\n",
 						(*it).second.person->id,
