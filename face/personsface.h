@@ -26,7 +26,7 @@ struct PersonFace {
 	string name;
 	PersonFace* next;
 
-	void update(const vector<float>& facedescriptor_, float deviation_, size_t counter_, const string& name_ = "")
+	void update(const vector<float>& facedescriptor_, float deviation_, size_t counter_)
 	{
 		if (counter == 0)
 		{
@@ -37,11 +37,6 @@ struct PersonFace {
 		else
 		{
 			facedescriptor = aggregate(facedescriptor, deviation, counter, facedescriptor_, deviation_, counter_, &deviation, &counter);
-		}
-
-		if (!name_.empty())
-		{
-			name = name_;
 		}
 	}
 };

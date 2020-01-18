@@ -260,7 +260,7 @@ void PersonsFace::update()
 {
 	FILE *fd = fopen(s_filepath.c_str(), "w");
 
-	if( !fd )
+	if (!fd)
 	{
 		return;
 	}

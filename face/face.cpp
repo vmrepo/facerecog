@@ -306,7 +306,7 @@ int main(int argc, char** argv)
 			case ExpectPerson:
 			{
 				ImageFace::s_personname = argv[i];
-
+				ImageFace::s_update = true;
 				status = ExpectAny;
 			}
 			break;

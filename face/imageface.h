@@ -36,6 +36,7 @@ struct ImageFace
 
 	static string s_logfile;
 	static string s_imagepath;
+	static int s_neededfaces;
 	static int s_maxfaceid;
 	static bool s_update;
 	static string s_personname;
