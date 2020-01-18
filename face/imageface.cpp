@@ -209,7 +209,7 @@ bool ImageFace::init(const string &path)
 void ImageFace::process(const std::vector<string> &filenames, const std::vector<string> &outnames)
 {
 	std::vector<float> lastdescriptor;
-	PersonsFace* person = nullptr;
+	PersonFace* person = nullptr;
 
 	for (int i = 0; i < filenames.size(); i++)
 	{
@@ -283,36 +283,39 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 					person_name = person->name;
 				}
 
-				titles.push_back(tostring(person_id) + " " + person_name);
+				titles.push_back(person_id != 0 ? tostring(person_id) + " " + person_name : "");
 
-				log("%d;%d;%d,%d;%d;%d;0[0];0[0]%s;%s\n",
-					person_id,
-					faceid,
-					face_rects[j].x,
-					face_rects[j].y,
-					face_rects[j].width,
-					face_rects[j].height,
-					tostring(facedescriptor).c_str(),
-					person_name.c_str());
-
-				char filename[128];
-
-				sprintf(filename, "%d-%d-%d-%d-%d-%d.jpg",
-					person_id,
-					faceid,
-					face_rects[j].x,
-					face_rects[j].y,
-					face_rects[j].width,
-					face_rects[j].height);
-
+				//if (person_id != 0)
 				{
-					Mat image_;
-					Scalar red = Scalar(0, 0, 255);
-					image.copyTo(image_);
-					cv::rectangle(image_, face_rects[j], red);
-					imwrite(s_imagepath + "/" + filename, image_);
+					log("%d;%d;%d,%d;%d;%d;0[0];0[0]%s;%s\n",
+						person_id,
+						faceid,
+						face_rects[j].x,
+						face_rects[j].y,
+						face_rects[j].width,
+						face_rects[j].height,
+						tostring(facedescriptor).c_str(),
+						person_name.c_str());
+
+					char filename[128];
+
+					sprintf(filename, "%d-%d-%d-%d-%d-%d.jpg",
+						person_id,
+						faceid,
+						face_rects[j].x,
+						face_rects[j].y,
+						face_rects[j].width,
+						face_rects[j].height);
+
+					{
+						Mat image_;
+						Scalar red = Scalar(0, 0, 255);
+						image.copyTo(image_);
+						cv::rectangle(image_, face_rects[j], red);
+						imwrite(s_imagepath + "/" + filename, image_);
+					}
+					//imwrite(s_imagepath + "/" + filename, image);
 				}
-				//imwrite(s_imagepath + "/" + filename, image);
 			}
 			else//s_update == true
 			{
@@ -324,22 +327,29 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 
 					if (len > 0.6)
 					{
-						//log other person face
+						log("all faces must be same person, ignored probably other person face: %s\n", filenames[i]);
 						ok = false;
-					}
-
-					if (len < 0.1)
+					} 
+					else if (len < 0.1)
 					{
-						//log same image face
+						log("faces must be diverse, ignored same face: %s\n", filenames[i]);
 						ok = false;
 					}
+					else
+					{
+						lastdescriptor = facedescriptor;
+					}
+				}
+				else
+				{
+					lastdescriptor = facedescriptor;
 				}
 
 				if (ok)
 				{
 					if (person == nullptr)
 					{
-						person = PersonFace();
+						person = new PersonFace();
 						person->id = 0;
 						person->next = nullptr;
 						person->counter = 0;
@@ -348,8 +358,6 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 					person->update(facedescriptor, 0, 1);
 				}
 			}
-
-			lastdescriptor = facedescriptor;
 		}
 
 		if (s_update == true)
@@ -363,7 +371,10 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 			{
 				Scalar red = Scalar(0, 0, 255);
 				cv::rectangle(image, face_rects[j], red);
-				putText(image, titles[j], face_rects[j].tl(), FONT_HERSHEY_DUPLEX, 0.8, red);
+				if (titles[i].size())
+				{
+					putText(image, titles[j], face_rects[j].tl(), FONT_HERSHEY_DUPLEX, 0.8, red);
+				}
 			}
 
 			imwrite(outnames[i], image);
@@ -376,7 +387,7 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 		{
 			if (person->counter >= s_neededfaces)
 			{
-				PersonFace* p = PersonFace::get(person->facedescriptor);
+				PersonFace* p = PersonsFace::get(person->facedescriptor);
 				if (p)
 				{
 					p->update(person->facedescriptor, person->deviation, person->counter);
@@ -384,25 +395,25 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 					{
 						p->name = s_personname;
 					}
-					//log updated existing person
+					log("updated existing person\n", person->id);
 					delete person;
 				}
 				else
 				{
 					person->name = s_personname;
-					PersonFace::add(person);
-					//log appended new person
+					PersonsFace::add(person);
+					log("appended new person %d\n", person->id);
 				}
 			}
 			else
 			{
-				//log not enough faces
+				log("not enough faces %d, need %d:\n", person->counter, s_neededfaces);
 				delete person;
 			}
 		}
 		else
 		{
-			//log not found faces
+			log("not found faces\n");
 		}
 	}
 }
