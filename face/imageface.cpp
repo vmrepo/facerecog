@@ -1,73 +1,7 @@
 
 #include "stdafx.h"
 
-//этот блок включений из dlib должен быть здесь, иначе много warning-ов
-#include <dlib/dnn.h>
-#include <dlib/gui_widgets.h>
-#include <dlib/clustering.h>
-#include <dlib/string.h>
-#include <dlib/image_io.h>
-#include <dlib/image_processing/frontal_face_detector.h>
-
-#include <fstream>
-
 #include "imageface.h"
-
-using namespace dlib;
-
-// ----------------------------------------------------------------------------------------
-
-// The next bit of code defines a ResNet network.  It's basically copied
-// and pasted from the dnn_imagenet_ex.cpp example, except we replaced the loss
-// layer with loss_metric and made the network somewhat smaller.  Go read the introductory
-// dlib DNN examples to learn what all this stuff means.
-//
-// Also, the dnn_metric_learning_on_images_ex.cpp example shows how to train this network.
-// The dlib_face_recognition_resnet_model_v1 model used by this example was trained using
-// essentially the code shown in dnn_metric_learning_on_images_ex.cpp except the
-// mini-batches were made larger (35x15 instead of 5x5), the iterations without progress
-// was set to 10000, the jittering you can see below in jitter_image() was used during
-// training, and the training dataset consisted of about 3 million images instead of 55.
-// Also, the input layer was locked to images of size 150.
-template <template <int, template<typename>class, int, typename> class block, int N, template<typename>class BN, typename SUBNET>
-using residual = add_prev1<block<N, BN, 1, tag1<SUBNET>>>;
-
-template <template <int, template<typename>class, int, typename> class block, int N, template<typename>class BN, typename SUBNET>
-using residual_down = add_prev2<avg_pool<2, 2, 2, 2, skip1<tag2<block<N, BN, 2, tag1<SUBNET>>>>>>;
-
-template <int N, template <typename> class BN, int stride, typename SUBNET>
-using block = BN<con<N, 3, 3, 1, 1, relu<BN<con<N, 3, 3, stride, stride, SUBNET>>>>>;
-
-template <int N, typename SUBNET> using ares = relu<residual<block, N, affine, SUBNET>>;
-template <int N, typename SUBNET> using ares_down = relu<residual_down<block, N, affine, SUBNET>>;
-
-template <typename SUBNET> using alevel0 = ares_down<256, SUBNET>;
-template <typename SUBNET> using alevel1 = ares<256, ares<256, ares_down<256, SUBNET>>>;
-template <typename SUBNET> using alevel2 = ares<128, ares<128, ares_down<128, SUBNET>>>;
-template <typename SUBNET> using alevel3 = ares<64, ares<64, ares<64, ares_down<64, SUBNET>>>>;
-template <typename SUBNET> using alevel4 = ares<32, ares<32, ares<32, SUBNET>>>;
-
-using anet_type = loss_metric<fc_no_bias<128, avg_pool_everything<
-	alevel0<
-	alevel1<
-	alevel2<
-	alevel3<
-	alevel4<
-	max_pool<3, 3, 2, 2, relu<affine<con<32, 7, 7, 2, 2,
-	input_rgb_image_sized<150>
-	>>>>>>>>>>>>;
-
-// ----------------------------------------------------------------------------------------
-
-//объекты детектирования  лиц
-frontal_face_detector ImageFace_detector;
-shape_predictor ImageFace_sp;
-//объект распознавания лиц
-anet_type ImageFace_net;
-
-#define DETECTOR ImageFace_detector
-#define SP ImageFace_sp
-#define NET ImageFace_net
 
 string ImageFace::s_logfile = "";
 string ImageFace::s_imagepath = "./";
@@ -139,73 +73,6 @@ void ImageFace::savemaxfaceid(int id)
 	}
 }
 
-string ImageFace::tostring(const std::vector<float>& facedescriptor)
-{
-	char buf[64];
-
-	string res;
-
-	for (int i = 0; i < 128; i++)
-	{
-		sprintf(buf, "%f", facedescriptor[i]);
-		if (i != 0)
-		{
-			res += " ";
-		}
-		res += buf;
-	}
-
-	return res;
-}
-
-double ImageFace::distance(const std::vector<float>& facedescriptor1, const std::vector<float>& facedescriptor2)
-{
-	double q = 0;
-	for (int i = 0; i < 128; i++)
-	{
-		double r = facedescriptor1[i] - facedescriptor2[i];
-		q += r * r;
-	}
-	return sqrt(q);
-}
-
-void ImageFace::copy(const dlib::matrix<float, 0, 1>& facedescriptorsrc, std::vector<float>& facedescriptordst)
-{
-	facedescriptordst.clear();
-
-	for (int i = 0; i < 128; i++)
-	{
-		facedescriptordst.push_back(facedescriptorsrc(i, 0));
-	}
-}
-
-bool ImageFace::init(const string &path)
-{
-	string shapefile = path + "shape_predictor_68_face_landmarks.dat";
-	string resnetfile = path + "dlib_face_recognition_resnet_model_v1.dat";
-
-	ifstream ifile0(shapefile.c_str());
-	ifstream ifile1(resnetfile.c_str());
-
-	if (!(bool)ifile0)
-	{
-		printf("not found shape_predictor_68_face_landmarks.dat\n");
-		return false;
-	}
-
-	if (!(bool)ifile1)
-	{
-		printf("not found dlib_face_recognition_resnet_model_v1.dat\n");
-		return false;
-	}
-
-	DETECTOR = get_frontal_face_detector();
-	deserialize(shapefile) >> SP;
-	deserialize(resnetfile) >> NET;
-
-	return true;
-}
-
 void ImageFace::process(const std::vector<string> &filenames, const std::vector<string> &outnames)
 {
 	std::vector<float> lastdescriptor;
@@ -223,59 +90,36 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 			continue;
 		}
 
-		std::vector<int> face_ids;
-		std::vector<string> face_names;
-		std::vector<Rect> face_rects;
+		Mat image = imread(filenames[i]);
 
-		matrix<rgb_pixel> img;
-		load_image(img, filenames[i]);
-
-		if (!img.size() || !img.nr() || !img.nc())
+		if (!(image.cols > 0 && image.rows > 0))
 		{
 			log("error: bad image\n");
 			continue;
 		}
 
-		int nr = img.nr();
+		std::vector<FrameFace> framefaces;
+		RecogFace::detect(image, framefaces);
 
-		pyramid_up(img);
+		std::vector<std::vector<FrameFace> > vectframefaces;
+		vectframefaces.push_back(framefaces);
+		RecogFace::recog(vectframefaces);
 
-		float k = (float)nr / img.nr();
-
-		std::vector<matrix<rgb_pixel> > faces;
-		for (auto face : DETECTOR(img))
-		{
-			face_rects.push_back(Rect(k * face.left(), k * face.top(), k * (face.right() - face.left()), k * (face.bottom() - face.top())));
-			auto shape = SP(img, face);
-			matrix<rgb_pixel> face_chip;
-			extract_image_chip(img, get_face_chip_details(shape, 150, 0.25), face_chip);
-			faces.push_back(move(face_chip));
-		}
-
-		if (faces.size() == 0)
-		{
-			continue;
-		}
-
-		std::vector<matrix<float, 0, 1> > facedescriptors = NET(faces);
 		std::vector<string> titles;
 
-		Mat image = imread(filenames[i]);
-
-		for (int j = 0; j < facedescriptors.size(); j++)
+		for (int j = 0; j < vectframefaces[0].size(); j++)
 		{
+			FrameFace &frameface = vectframefaces[0][j];
+
 			int faceid = ++s_maxfaceid;
 			savemaxfaceid(s_maxfaceid);
-
-			std::vector<float> facedescriptor;
-			copy(facedescriptors[j], facedescriptor);
 
 			if (s_update == false)
 			{
 				int person_id = 0;
 				string person_name = "";
 
-				PersonFace* person = PersonsFace::get(facedescriptor);
+				PersonFace* person = PersonsFace::get(frameface.facedescriptor);
 
 				if (person)
 				{
@@ -290,11 +134,11 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 					log("%d;%d;%d,%d;%d;%d;0[0];0[0]%s;%s\n",
 						person_id,
 						faceid,
-						face_rects[j].x,
-						face_rects[j].y,
-						face_rects[j].width,
-						face_rects[j].height,
-						tostring(facedescriptor).c_str(),
+						frameface.rect.x,
+						frameface.rect.y,
+						frameface.rect.width,
+						frameface.rect.height,
+						PersonFace::tostring(frameface.facedescriptor).c_str(),
 						person_name.c_str());
 
 					char filename[128];
@@ -302,16 +146,16 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 					sprintf(filename, "%d-%d-%d-%d-%d-%d.jpg",
 						person_id,
 						faceid,
-						face_rects[j].x,
-						face_rects[j].y,
-						face_rects[j].width,
-						face_rects[j].height);
+						frameface.rect.x,
+						frameface.rect.y,
+						frameface.rect.width,
+						frameface.rect.height);
 
 					{
 						Mat image_;
 						Scalar red = Scalar(0, 0, 255);
 						image.copyTo(image_);
-						cv::rectangle(image_, face_rects[j], red);
+						cv::rectangle(image_, frameface.rect, red);
 						imwrite(s_imagepath + "/" + filename, image_);
 					}
 					//imwrite(s_imagepath + "/" + filename, image);
@@ -323,7 +167,7 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 
 			 	if (lastdescriptor.size())
 				{
-					float len = PersonFace::distance(facedescriptor, lastdescriptor);
+					float len = PersonFace::distance(frameface.facedescriptor, lastdescriptor);
 
 					if (len > 0.6)
 					{
@@ -337,12 +181,12 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 					}
 					else
 					{
-						lastdescriptor = facedescriptor;
+						lastdescriptor = frameface.facedescriptor;
 					}
 				}
 				else
 				{
-					lastdescriptor = facedescriptor;
+					lastdescriptor = frameface.facedescriptor;
 				}
 
 				if (ok)
@@ -355,7 +199,7 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 						person->counter = 0;
 						person->deviation = 0;
 					}
-					person->update(facedescriptor, 0, 1);
+					person->update(frameface.facedescriptor, 0, 1);
 				}
 			}
 		}
@@ -367,13 +211,15 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 
 		if (i < outnames.size())
 		{
-			for (int j = 0; j < face_rects.size(); j++)
+			for (int j = 0; j < vectframefaces[0].size(); j++)
 			{
+				FrameFace &frameface = vectframefaces[0][j];
+
 				Scalar red = Scalar(0, 0, 255);
-				cv::rectangle(image, face_rects[j], red);
+				cv::rectangle(image, frameface.rect, red);
 				if (titles[i].size())
 				{
-					putText(image, titles[j], face_rects[j].tl(), FONT_HERSHEY_DUPLEX, 0.8, red);
+					putText(image, titles[j], frameface.rect.tl(), FONT_HERSHEY_DUPLEX, 0.8, red);
 				}
 			}
 

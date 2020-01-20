@@ -336,24 +336,20 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
+	RecogFace::init(pathself);
+
 	PersonsFace::init(personpath + "/" + "persons.csv");
 
 	if (images.size())
 	{
-		if (ImageFace::init(pathself))
-		{
-			ImageFace::s_maxfaceid = ImageFace::restoremaxfaceid();
-			ImageFace::process(images, outs);
-		}
+		ImageFace::s_maxfaceid = ImageFace::restoremaxfaceid();
+		ImageFace::process(images, outs);
 	}
 
 	if (video.size())
 	{
-		if (VideoFace::init(pathself))
-		{
-			VideoFace::s_maxfaceid = VideoFace::restoremaxfaceid();
-			VideoFace::process(video);
-		}
+		VideoFace::s_maxfaceid = VideoFace::restoremaxfaceid();
+		VideoFace::process(video);
 	}
 
 	UNINIT

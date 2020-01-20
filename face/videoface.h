@@ -4,11 +4,7 @@
 #include "stdlib.h"
 #include "stdio.h"
 
-#include <dlib/pixel.h>
-#include <dlib/matrix.h>
-
-#include "opencv2/opencv.hpp"
-
+#include "recogface.h"
 #include "personsface.h"
 
 using namespace std;
@@ -50,13 +46,6 @@ struct StatusFace
 	std::vector<SimpleKalmanFilter> filters;
 };
 
-struct FrameFace
-{
-	Rect rect;
-	dlib::matrix<dlib::rgb_pixel> face;
-	std::vector<float> facedescriptor;
-};
-
 struct VideoFace
 {
 	static string tostring(size_t i);
@@ -66,9 +55,6 @@ struct VideoFace
 	static int restoremaxfaceid();
 	static void savemaxfaceid(int id);
 
-	static void copy(const dlib::matrix<float, 0, 1>& facedescriptorsrc, std::vector<float>& facedescriptordst);
-
-	static bool init(const string &path);
 	static void process(const string &videosource);
 	static void processbuffer(const string &name, int fps, size_t start, size_t step, std::vector<Mat> &frames, std::vector<std::vector<FrameFace> > &vectframefaces, std::map<int, StatusFace> &status);
 
