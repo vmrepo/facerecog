@@ -76,6 +76,7 @@ void ImageFace::savemaxfaceid(int id)
 void ImageFace::process(const std::vector<string> &filenames, const std::vector<string> &outnames)
 {
 	std::vector<float> lastdescriptor;
+	std::vector<vector<float> > alldescriptors;
 	PersonFace* person = nullptr;
 
 	for (int i = 0; i < filenames.size(); i++)
@@ -129,7 +130,7 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 
 				titles.push_back(person_id != 0 ? tostring(person_id) + " " + person_name : "");
 
-				//if (person_id != 0)
+				if (person_id != 0)
 				{
 					log("%d;%d;%d,%d;%d;%d;0[0];0[0]%s;%s\n",
 						person_id,
@@ -174,19 +175,18 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 						log("all faces must be same person, ignored probably other person face: %s\n", filenames[i]);
 						ok = false;
 					} 
-					else if (len < 0.1)
-					{
-						log("faces must be diverse, ignored same face: %s\n", filenames[i]);
-						ok = false;
-					}
 					else
 					{
-						lastdescriptor = frameface.facedescriptor;
+						for (int k = 0; k < alldescriptors.size(); k++)
+						{
+							float len = PersonFace::distance(frameface.facedescriptor, alldescriptors[k]);
+							if( len < 0.1 ) {
+								log( "faces must be diverse, ignored same face: %s\n", filenames[i] );
+								ok = false;
+								break;
+							}
+						}
 					}
-				}
-				else
-				{
-					lastdescriptor = frameface.facedescriptor;
 				}
 
 				if (ok)
@@ -200,6 +200,8 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 						person->deviation = 0;
 					}
 					person->update(frameface.facedescriptor, 0, 1);
+					lastdescriptor = frameface.facedescriptor;
+					alldescriptors.push_back(frameface.facedescriptor);
 				}
 			}
 		}
@@ -241,13 +243,15 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 					{
 						p->name = s_personname;
 					}
-					log("updated existing person\n", person->id);
+					PersonsFace::update();
+					log("updated existing person %d\n", person->id);
 					delete person;
 				}
 				else
 				{
 					person->name = s_personname;
 					PersonsFace::add(person);
+					PersonsFace::update();
 					log("appended new person %d\n", person->id);
 				}
 			}
