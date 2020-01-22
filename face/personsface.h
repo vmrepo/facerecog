@@ -19,14 +19,24 @@ struct PersonFace {
 			const vector<float>& facedescriptor2, float deviation2, size_t counter2,
 			float* deviation, size_t* counter);
 
-	int id;
-	size_t counter;
-	float deviation;
-	vector<float> facedescriptor;
-	string name;
-	PersonFace* next;
+	PersonFace()
+	{
+		id = 0;
+		next = nullptr;
+		counter = 0;
+		deviation = 0;
+	}
 
-	void update(const vector<float>& facedescriptor_, float deviation_, size_t counter_)
+private:
+	PersonFace(const PersonFace& personFace);
+	PersonFace& operator=(const PersonFace& personFace);
+
+public:
+	virtual ~PersonFace()
+	{
+	}
+
+	void update(const vector<float>& facedescriptor_, float deviation_ = 0, size_t counter_ = 1)
 	{
 		if (counter == 0)
 		{
@@ -39,6 +49,13 @@ struct PersonFace {
 			facedescriptor = aggregate(facedescriptor, deviation, counter, facedescriptor_, deviation_, counter_, &deviation, &counter);
 		}
 	}
+
+	int id;
+	size_t counter;
+	float deviation;
+	vector<float> facedescriptor;
+	string name;
+	PersonFace* next;
 };
 
 struct ListFace

@@ -330,10 +330,6 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 				status[faceid].startrect = face.rect;
 				status[faceid].searchfailed = false;
 				status[faceid].person = new PersonFace();
-				status[faceid].person->id = 0;
-				status[faceid].person->next = nullptr;
-				status[faceid].person->counter = 0;
-				status[faceid].person->deviation = 0;
 
 				if (s_kalman)
 				{
@@ -375,7 +371,7 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 			if (status[faceid].lastdescriptor.size() == 0 || PersonFace::distance(status[faceid].lastdescriptor, face.facedescriptor) > 0.1)
 			{
 				status[faceid].lastdescriptor = face.facedescriptor;
-				status[faceid].person->update(face.facedescriptor, 0, 1);
+				status[faceid].person->update(face.facedescriptor);
 			}
 
 			//инфа об ограничивающих боксах лиц для кадра

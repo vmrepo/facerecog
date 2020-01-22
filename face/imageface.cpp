@@ -194,12 +194,8 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 					if (person == nullptr)
 					{
 						person = new PersonFace();
-						person->id = 0;
-						person->next = nullptr;
-						person->counter = 0;
-						person->deviation = 0;
 					}
-					person->update(frameface.facedescriptor, 0, 1);
+					person->update(frameface.facedescriptor);
 					lastdescriptor = frameface.facedescriptor;
 					alldescriptors.push_back(frameface.facedescriptor);
 				}
