@@ -215,7 +215,7 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 
 				Scalar red = Scalar(0, 0, 255);
 				cv::rectangle(image, frameface.rect, red);
-				if (titles[i].size())
+				if (titles[j].size())
 				{
 					putText(image, titles[j], frameface.rect.tl(), FONT_HERSHEY_DUPLEX, 0.8, red);
 				}
