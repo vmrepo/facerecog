@@ -278,14 +278,15 @@ PersonFace* PersonsFace::get(const vector<float>& facedescriptor)
 	PersonFace* best_person = nullptr;
 	double best_len = -1;
 
-	double threshold_len = 0.6;
+	double threshold_len0 = 0.4;
+	double threshold_len1 = 0.6;
 	double factor_dev = 1.4;
 
 	for (PersonFace* person = s_persons.Bottom(); person != nullptr; person = person->next)
 	{
 		double len = PersonFace::distance(facedescriptor, person->facedescriptor);
 
-		if (len < threshold_len && len < person->deviation * factor_dev)
+		if ((len < threshold_len0) || (len < threshold_len1 && len < person->deviation * factor_dev))
 		{
 			if (best_len == -1 || len < best_len)
 			{
