@@ -1,0 +1,1 @@
+"./../face.exe" -video 003_013.avi -logfile ./log.txt -framepath ./persons -personpath ./persons -showon -kalmanoff -update

@@ -1,0 +1,1 @@
+"./../face.exe" -image rock0.jpg rock1.jpg rock2.jpg rock3.jpg rock4.jpg rock5.jpg rock6.jpg rock7.jpg rock8.jpg rock9.jpg -framepath ./persons -personpath ./persons -person Rock

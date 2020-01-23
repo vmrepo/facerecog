@@ -1,0 +1,1 @@
+"./../face.exe" -image bald_guys.jpg -framepath ./persons -personpath ./persons -out bald_guys_result.jpg
