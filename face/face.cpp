@@ -198,7 +198,7 @@ int main(int argc, char** argv)
 
 			status = ExpectAny;
 		}
-		else if( !strcasecmp( argv[i], "-update" ) )
+		else if (!strcasecmp(argv[i], "-update"))
 		{
 			if ((status != ExpectAny && status != ExpectImage && status != ExpectOut) || (images.size() == 0 && video.size() == 0) || (status == ExpectOut && outs.size() == 0))
 			{
@@ -214,7 +214,7 @@ int main(int argc, char** argv)
 
 			status = ExpectAny;
 		}
-		else if( !strcasecmp( argv[i], "-person" ) )
+		else if (!strcasecmp(argv[i], "-person"))
 		{
 			if ((status != ExpectAny && status != ExpectImage && status != ExpectOut) || images.size() == 0 || video.size() != 0 || (status == ExpectOut && outs.size() == 0))
 			{
