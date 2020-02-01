@@ -252,7 +252,7 @@ void VideoFace::process(const string &videosource)
 		}
 	}
 
-	if( s_update )
+	if (s_update)
 	{
 		PersonsFace::update();
 	}
@@ -408,7 +408,7 @@ void VideoFace::processbuffer(const string &name, int fps, size_t start, size_t 
 		}
 
 		//ищем не обнаруженные в кадре лица, если устарели - удаляем
-		for (std::map<int, StatusFace>::iterator it = status.begin(); it != status.end(); )
+		for (std::map<int, StatusFace>::iterator it = status.begin(); it != status.end();)
 		{
 			if ((*it).second.lastframe < start + i * step)
 			{

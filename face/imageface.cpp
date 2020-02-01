@@ -52,7 +52,7 @@ int ImageFace::restoremaxfaceid()
 	int id = 0;
 	string fn = s_imagepath + "/" + "maxfaceid";
 	FILE *f = fopen(fn.c_str(), "r");
-	if( f != nullptr )
+	if (f != nullptr)
 	{
 		char data[32];
 		fread(data, 32, 1, f);
@@ -180,8 +180,8 @@ void ImageFace::process(const std::vector<string> &filenames, const std::vector<
 						for (int k = 0; k < alldescriptors.size(); k++)
 						{
 							float len = PersonFace::distance(frameface.facedescriptor, alldescriptors[k]);
-							if( len < 0.1 ) {
-								log( "faces must be diverse, ignored same face: %s\n", filenames[i] );
+							if (len < 0.1) {
+								log("faces must be diverse, ignored same face: %s\n", filenames[i]);
 								ok = false;
 								break;
 							}

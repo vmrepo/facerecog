@@ -16,7 +16,7 @@ struct ImageFace
 	static void log(const char* format, ...);
 
 	static int restoremaxfaceid();
-	static void savemaxfaceid( int id );
+	static void savemaxfaceid(int id);
 
 	static void process(const std::vector<string> &filenames, const std::vector<string> &outnames);
 

@@ -156,7 +156,7 @@ int main(int argc, char** argv)
 
 			status = ExpectFramePath;
 		}
-		else if (!strcasecmp( argv[i], "-personpath"))
+		else if (!strcasecmp(argv[i], "-personpath"))
 		{
 			if ((status != ExpectAny && status != ExpectImage && status != ExpectOut) || (images.size() == 0 && video.size() == 0))
 			{
