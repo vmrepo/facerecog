@@ -336,7 +336,11 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
-	RecogFace::init(pathself);
+	if (!RecogFace::init(pathself))
+	{
+		UNINIT
+		return 0;
+	}
 
 	PersonsFace::init(personpath + "/" + "persons.csv");
 
